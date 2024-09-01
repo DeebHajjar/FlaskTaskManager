@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Management System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        form {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 5px;
+        }
+        button:hover {
+            opacity: 0.8;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: white;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+        .complete-btn {
+            background-color: #2196F3;
+        }
+        .delete-btn {
+            background-color: #f44336;
+        }
+        .completed {
+            text-decoration: line-through;
+            color: #888;
+        }
+    </style>
+</head>
+<body>
+    <h1>Task Management System</h1>
+    <form id="taskForm">
+        <input type="text" id="taskTitle" placeholder="Task Title" required>
+        <textarea id="taskDescription" placeholder="Task Description"></textarea>
+        <button type="submit">Add Task</button>
+    </form>
+    <table id="taskTable">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Created At</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="taskList">
+        </tbody>
+    </table>
+
+    <script>
+        document.getElementById('taskForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const title = document.getElementById('taskTitle').value;
+            const description = document.getElementById('taskDescription').value;
+            
+            const response = await fetch('/tasks', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ title, description }),
+            });
+
+            if (response.ok) {
+                document.getElementById('taskTitle').value = '';
+                document.getElementById('taskDescription').value = '';
+                loadTasks();
+            }
+        });
+
+        async function loadTasks() {
+            const response = await fetch('/tasks');
+            const tasks = await response.json();
+            const taskList = document.getElementById('taskList');
+            taskList.innerHTML = '';
+            tasks.forEach(task => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="${task.completed ? 'completed' : ''}">${task.title}</td>
+                    <td class="${task.completed ? 'completed' : ''}">${task.description}</td>
+                    <td>${new Date(task.created_at).toLocaleString()}</td>
+                    <td>${task.completed ? 'Completed' : 'Pending'}</td>
+                    <td>
+                        ${!task.completed ? `<button class="complete-btn" onclick="completeTask(${task.id})">Complete</button>` : ''}
+                        <button class="delete-btn" onclick="deleteTask(${task.id})">Delete</button>
+                    </td>
+                `;
+                taskList.appendChild(row);
+            });
+        }
+
+        async function completeTask(taskId) {
+            const response = await fetch(`/tasks/${taskId}/complete`, {
+                method: 'PUT'
+            });
+            if (response.ok) {
+                loadTasks();
+            }
+        }
+
+        async function deleteTask(taskId) {
+            const response = await fetch(`/tasks/${taskId}`, {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                loadTasks();
+            }
+        }
+
+        loadTasks();
+    </script>
+</body>
+</html>
